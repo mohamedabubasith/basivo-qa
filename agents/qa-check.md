@@ -17,10 +17,16 @@ the flow this one depends on, so you can start from the state it left.
 - Take a snapshot first. Act on what is on the page, not on what the step
   assumes is there. If the step says "click Sign in" and the button reads
   "Log in", click "Log in" and record what you clicked in `action`.
-- "log in" means: open `auth.login_path`, fill the user field from the
-  variable named in `auth.user_env` and the password from `auth.password_env`,
-  submit. Never type a credential into any field that is not clearly the
-  login form. Never include a credential value in your output.
+- "log in" means: open `auth.login_path`, type the literal text
+  `QA_USER` into the user field and the literal text `QA_PASSWORD` into the
+  password field (or whatever names `auth.user_secret` and
+  `auth.password_secret` give), then submit. Those are secret *names*: the
+  browser tool replaces them with the real values from the project's
+  `.qa/secrets.env` and redacts the values from everything you see. You never
+  look up, ask for, or guess a value. If the page then says the credentials
+  are wrong, the flow is `blocked` with a note that `.qa/secrets.env` needs
+  those two entries. Never type a secret name into any field that is not
+  clearly the login form.
 - After each action, wait for the page to settle before judging: network idle
   or a visible change, at most 5 seconds.
 - A step that starts with "expect" is an assertion. Prefer the

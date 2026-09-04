@@ -1,6 +1,6 @@
 {
   "name": "basivo-qa",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "Test a web app in a real browser and hand the verdict to Claude, so the bug gets fixed in the same session instead of written up in a report.",
   "author": {
     "name": "Basivo",
@@ -19,14 +19,9 @@
   ],
   "mcpServers": {
     "playwright": {
-      "command": "npx",
+      "command": "node",
       "args": [
-        "-y",
-        "@playwright/mcp@0.0.80",
-        "--isolated",
-        "--headless",
-        "--output-dir",
-        ".qa/run"
+        "${CLAUDE_PLUGIN_ROOT}/bin/playwright-mcp.mjs"
       ]
     }
   },

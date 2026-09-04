@@ -21,8 +21,13 @@ fix what failed, rerun only that flow, stop when green.
   running anything.
 - A base URL. Order: argument to the command, then `base_url` in flows.yaml,
   then a dev server detected on localhost. Never guess a production URL.
-- Credentials only from environment variables named in `auth:`. Never read
-  them from files, never print them, never write them into a verdict.
+- Credentials only from `.qa/secrets.env` (dotenv, gitignored). The browser
+  tool reads that file; the agents type the secret names given in `auth:` and
+  the tool substitutes the values and redacts them from every response. Never
+  read that file, never print a value, never write one into a verdict. If it
+  is missing the entries a flow needs, the flow is `blocked` and the summary
+  says which entries to add. Make sure `.qa/secrets.env` and `.qa/run/` are in
+  the project's `.gitignore`; add them if not.
 
 ## Run
 

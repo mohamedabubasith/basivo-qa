@@ -11,12 +11,15 @@ base_url: http://localhost:5173
 watch:
   - apps/web/src/**
 
-# Credentials come from the environment, never from this file.
-# The agent reads QA_USER and QA_PASSWORD when a step says "log in".
+# Credentials live in .qa/secrets.env (dotenv format, add it to .gitignore):
+#   QA_USER=you@example.com
+#   QA_PASSWORD=...
+# The agent types the *names* below; the browser tool swaps in the values and
+# redacts them from everything the agent sees.
 auth:
   login_path: /login
-  user_env: QA_USER
-  password_env: QA_PASSWORD
+  user_secret: QA_USER
+  password_secret: QA_PASSWORD
 
 flows:
   - id: signup

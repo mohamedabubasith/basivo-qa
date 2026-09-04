@@ -51,24 +51,17 @@ a minute.
    you the file. Edit it if you like; commit it.
 3. `/qa` whenever you want to know whether anything broke.
 
-Credentials for flows that log in come from environment variables, by
-default `QA_USER` and `QA_PASSWORD`. They are never written to disk by the
-plugin.
+Credentials for flows that log in go in `.qa/secrets.env`, dotenv format,
+gitignored:
 
-## Runs that happen on their own
-
-Add a `watch` list to `.qa/flows.yaml`:
-
-```yaml
-watch:
-  - apps/web/src/**
+```
+QA_USER=you@example.com
+QA_PASSWORD=...
 ```
 
-From then on, when Claude edits a file that matches, the affected flows are
-remembered, and Claude runs them before it finishes the turn and tells you
-what broke. A flow can carry its own `watch` list to narrow this to the
-files it cares about. No `watch` list means nothing runs by itself; `/qa`
-stays manual.
+The agent types the names, not the values. The browser tool swaps the real
+value in and redacts it from everything the agent reads, so no credential
+ever enters the model's context or a verdict.
 
 ## What a verdict looks like
 

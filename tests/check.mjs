@@ -12,8 +12,9 @@ const plugin = JSON.parse(read(".claude-plugin/plugin.json"));
 for (const key of ["skills", "agents", "commands"]) {  // default dirs, auto-discovered
   if (!existsSync(join(root, key))) fail(`${key} dir missing`);
 }
-if (!plugin.mcpServers?.playwright?.args?.some((a) => a.startsWith("@playwright/mcp@")))
-  fail("playwright mcp server must be pinned");
+if (!/VERSION = "0\.0\.\d+"/.test(read("bin/playwright-mcp.mjs"))) fail("playwright mcp version must be pinned in the launcher");
+if (!read("bin/playwright-mcp.mjs").includes("--secrets")) fail("launcher must wire the secrets file");
+if (!read("agents/qa-check.md").includes("QA_USER")) fail("qa-check must explain typing secret names");
 
 const frontmatter = (text) => {
   const m = text.match(/^---\n([\s\S]*?)\n---/);
@@ -56,7 +57,7 @@ check(verdict, schema, "verdict");
 
 // The example flows file must at least be well-formed enough to have the keys we document.
 const flows = read("examples/flows.yaml");
-for (const key of ["base_url:", "auth:", "flows:", "depends_on:"]) if (!flows.includes(key)) fail(`flows.yaml lacks ${key}`);
+for (const key of ["base_url:", "auth:", "user_secret:", "flows:", "depends_on:"]) if (!flows.includes(key)) fail(`flows.yaml lacks ${key}`);
 
 // Hooks: the flows reader, glob matching, and both hook scripts end to end
 // against a scratch project.
