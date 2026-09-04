@@ -1,0 +1,19 @@
+{
+  "name": "basivo-qa",
+  "version": "0.1.0",
+  "description": "Test a web app in a real browser and hand the verdict to Claude, so the bug gets fixed in the same session instead of written up in a report.",
+  "author": { "name": "Basivo", "url": "https://basivo.in" },
+  "homepage": "https://github.com/basivo/basivo-qa",
+  "repository": "https://github.com/basivo/basivo-qa",
+  "license": "MIT",
+  "keywords": ["qa", "testing", "playwright", "browser", "agent", "verdict"],
+  "mcpServers": {
+    "playwright": {
+      "command": "npx",
+      "args": ["-y", "@playwright/mcp@0.0.80", "--isolated", "--output-dir", ".qa/run"]
+    }
+  },
+  "skills": "./skills/",
+  "agents": "./agents/",
+  "commands": "./commands/"
+}

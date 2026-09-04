@@ -1,0 +1,15 @@
+{
+  "name": "basivo",
+  "owner": { "name": "Basivo" },
+  "metadata": { "description": "Claude Code plugins by Basivo", "version": "0.1.0" },
+  "plugins": [
+    {
+      "name": "basivo-qa",
+      "source": "./",
+      "description": "Browser testing whose output is a verdict Claude can act on, not a report a human reads.",
+      "version": "0.1.0",
+      "category": "testing",
+      "keywords": ["qa", "testing", "playwright", "browser", "agent"]
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "flow": "login",
+  "status": "fail",
+  "base_url": "http://localhost:5173",
+  "steps_run": 3,
+  "failed_step": {
+    "index": 3,
+    "intent": "expect to land inside the app, not on /login",
+    "action": "waited 5s after clicking button 'Sign in'",
+    "expected": "URL under /app",
+    "actual": "still on /login, toast 'Method Not Allowed'",
+    "url": "http://localhost:5173/login"
+  },
+  "console": ["POST http://localhost:5173/auth/login 405 (Method Not Allowed)"],
+  "network": [{ "method": "POST", "url": "/auth/login", "status": 405 }],
+  "screenshot": ".qa/run/login-3.png",
+  "suspects": ["apps/web/Caddyfile:41"],
+  "note": "The login POST is redirected with a 301, which turns it into a GET. Use 308 to keep the method."
+}

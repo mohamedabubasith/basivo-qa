@@ -1,0 +1,41 @@
+# Flows are intents, not selectors. The agent works out how to click each
+# step every run, so a moved button does not break the flow.
+#
+# Copy this file to .qa/flows.yaml in your project and edit.
+
+base_url: http://localhost:5173
+
+# Credentials come from the environment, never from this file.
+# The agent reads QA_USER and QA_PASSWORD when a step says "log in".
+auth:
+  login_path: /login
+  user_env: QA_USER
+  password_env: QA_PASSWORD
+
+flows:
+  - id: signup
+    steps:
+      - open /register
+      - fill the form with a new random email and a strong password
+      - submit
+      - expect a message that says to check email, or a redirect into the app
+
+  - id: login
+    steps:
+      - open /login
+      - log in
+      - expect to land inside the app, not on /login
+
+  - id: create-flow
+    depends_on: login
+    steps:
+      - click the button that creates a new item
+      - expect the editor to open with an untitled item and no error toast
+
+  - id: rename-and-save
+    depends_on: create-flow
+    steps:
+      - rename the item to "QA smoke"
+      - save with the keyboard shortcut
+      - reload the page
+      - expect the name "QA smoke" to still be there

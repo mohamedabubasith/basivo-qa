@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://basivo.in/schemas/qa-verdict.json",
+  "title": "Verdict",
+  "description": "What one flow did when it was exercised in a real browser. Small enough for a coding agent to reason over; complete enough to fix the bug without re-running.",
+  "type": "object",
+  "required": ["flow", "status", "steps_run", "base_url"],
+  "additionalProperties": false,
+  "properties": {
+    "flow": { "type": "string", "description": "Flow id from flows.yaml, e.g. login" },
+    "status": { "enum": ["pass", "fail", "blocked"], "description": "blocked means the flow could not even start, e.g. server down or login prerequisite failed" },
+    "base_url": { "type": "string" },
+    "steps_run": { "type": "integer", "minimum": 0 },
+    "failed_step": {
+      "type": "object",
+      "required": ["index", "intent", "expected", "actual"],
+      "additionalProperties": false,
+      "properties": {
+        "index": { "type": "integer", "minimum": 1 },
+        "intent": { "type": "string", "description": "The step text from flows.yaml" },
+        "action": { "type": "string", "description": "What the agent actually did, e.g. click button 'Sign in'" },
+        "expected": { "type": "string" },
+        "actual": { "type": "string" },
+        "url": { "type": "string", "description": "Page URL after the failing action" }
+      }
+    },
+    "console": {
+      "type": "array",
+      "maxItems": 20,
+      "items": { "type": "string" },
+      "description": "Console errors and warnings during the flow, newest last, trimmed"
+    },
+    "network": {
+      "type": "array",
+      "maxItems": 20,
+      "items": {
+        "type": "object",
+        "required": ["method", "url", "status"],
+        "additionalProperties": false,
+        "properties": {
+          "method": { "type": "string" },
+          "url": { "type": "string" },
+          "status": { "type": "integer" }
+        }
+      },
+      "description": "Requests that returned 4xx/5xx or did not complete"
+    },
+    "screenshot": { "type": "string", "description": "Path to the screenshot at the failing step, relative to the project" },
+    "suspects": {
+      "type": "array",
+      "maxItems": 5,
+      "items": { "type": "string" },
+      "description": "Repo paths, optionally with :line, most likely to own the bug. Filled by the triage step, empty when unknown"
+    },
+    "note": { "type": "string", "maxLength": 400, "description": "One or two sentences a human would want to read. Nothing else goes here" }
+  }
+}
