@@ -1,6 +1,6 @@
 {
   "name": "basivo-qa",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Test a web app in a real browser and hand the verdict to Claude, so the bug gets fixed in the same session instead of written up in a report.",
   "author": {
     "name": "Basivo",
@@ -24,9 +24,35 @@
         "-y",
         "@playwright/mcp@0.0.80",
         "--isolated",
+        "--headless",
         "--output-dir",
         ".qa/run"
       ]
     }
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/after-edit.mjs\"",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/before-stop.mjs\"",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
   }
 }

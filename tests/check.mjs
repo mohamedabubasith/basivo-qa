@@ -58,8 +58,45 @@ check(verdict, schema, "verdict");
 const flows = read("examples/flows.yaml");
 for (const key of ["base_url:", "auth:", "flows:", "depends_on:"]) if (!flows.includes(key)) fail(`flows.yaml lacks ${key}`);
 
-for (const f of ["README.md", "CLAUDE.md", "skills/qa/SKILL.md", ...readdirSync(join(root, "agents")).map((a) => "agents/" + a), ...readdirSync(join(root, "commands")).map((c) => "commands/" + c)]) {
+// Hooks: the flows reader, glob matching, and both hook scripts end to end
+// against a scratch project.
+import { mkdtempSync, mkdirSync, writeFileSync, utimesSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { execFileSync } from "node:child_process";
+import { readFlows, affectedFlows, globToRegExp } from "../hooks/flows.mjs";
+
+const proj = mkdtempSync(join(tmpdir(), "qa-hooks-"));
+mkdirSync(join(proj, ".qa"));
+writeFileSync(join(proj, ".qa", "flows.yaml"), read("examples/flows.yaml"));
+const cfg = readFlows(proj);
+if (cfg.watch.join() !== "apps/web/src/**") fail("top-level watch not read: " + cfg.watch);
+if (cfg.flows.map((f) => f.id).join() !== "signup,login,create-flow,rename-and-save") fail("flow ids: " + cfg.flows.map((f) => f.id));
+if (cfg.flows[1].watch.length !== 2) fail("login watch list not read");
+if (!globToRegExp("apps/web/src/**").test("apps/web/src/a/b.tsx")) fail("** glob");
+if (globToRegExp("apps/web/src/**").test("apps/api/x.py")) fail("glob too loose");
+if (!globToRegExp("apps/web/src/lib/auth*").test("apps/web/src/lib/auth.ts")) fail("* glob");
+if (affectedFlows(cfg, "apps/web/src/routes/auth/Login.tsx").join() !== "login") fail("own watch should win: " + affectedFlows(cfg, "apps/web/src/routes/auth/Login.tsx"));
+if (affectedFlows(cfg, "apps/web/src/routes/app/Builder.tsx").length !== 4) fail("top-level watch should select every flow");
+if (affectedFlows(cfg, "apps/api/main.py").length !== 0) fail("unwatched file should select nothing");
+
+const hook = (name, event) => execFileSync("node", [join(root, "hooks", name)], { input: JSON.stringify(event), encoding: "utf8" });
+const edit = hook("after-edit.mjs", { cwd: proj, tool_name: "Edit", tool_input: { file_path: join(proj, "apps/web/src/routes/auth/Login.tsx") } });
+if (!edit.includes("login")) fail("after-edit should name the flow: " + edit);
+if (!existsSync(join(proj, ".qa/run/pending.json"))) fail("pending file not written");
+if (hook("after-edit.mjs", { cwd: proj, tool_input: { file_path: join(proj, "apps/api/main.py") } }) !== "") fail("unwatched edit should be silent");
+const stop = JSON.parse(hook("before-stop.mjs", { cwd: proj }));
+if (stop.decision !== "block" || !stop.reason.includes("login")) fail("stop should block with the flow named: " + JSON.stringify(stop));
+if (hook("before-stop.mjs", { cwd: proj, stop_hook_active: true }) !== "") fail("stop must not loop");
+// A verdicts file newer than the edit settles the pending list.
+writeFileSync(join(proj, ".qa/run/verdicts.json"), "[]");
+const later = new Date(Date.now() + 5000); utimesSync(join(proj, ".qa/run/verdicts.json"), later, later);
+if (hook("before-stop.mjs", { cwd: proj }) !== "") fail("stop should pass once verdicts are fresh");
+if (JSON.parse(readFileSync(join(proj, ".qa/run/pending.json"), "utf8")).flows.length) fail("pending should be cleared");
+if (hook("before-stop.mjs", { cwd: mkdtempSync(join(tmpdir(), "noqa-")) }) !== "") fail("no flows.yaml means inert");
+
+for (const f of ["README.md", "CLAUDE.md", "skills/qa/SKILL.md", ...readdirSync(join(root, "agents")).map((a) => "agents/" + a), ...readdirSync(join(root, "commands")).map((c) => "commands/" + c), ...readdirSync(join(root, "hooks")).map((h) => "hooks/" + h)]) {
   if (read(f).includes("—")) fail(`${f}: em-dash in user-facing text`);
 }
 
 if (!process.exitCode) console.log("ok");
+

@@ -40,8 +40,9 @@ claude plugin marketplace add mohamedabubasith/basivo-qa
 claude plugin install basivo-qa@basivo
 ```
 
-The plugin bundles the Playwright MCP server; the first run downloads a
-browser, which takes a minute.
+The plugin bundles the Playwright MCP server and runs the browser headless.
+If no browser is installed yet, the first run installs Chromium, which takes
+a minute.
 
 ## Use
 
@@ -53,6 +54,21 @@ browser, which takes a minute.
 Credentials for flows that log in come from environment variables, by
 default `QA_USER` and `QA_PASSWORD`. They are never written to disk by the
 plugin.
+
+## Runs that happen on their own
+
+Add a `watch` list to `.qa/flows.yaml`:
+
+```yaml
+watch:
+  - apps/web/src/**
+```
+
+From then on, when Claude edits a file that matches, the affected flows are
+remembered, and Claude runs them before it finishes the turn and tells you
+what broke. A flow can carry its own `watch` list to narrow this to the
+files it cares about. No `watch` list means nothing runs by itself; `/qa`
+stays manual.
 
 ## What a verdict looks like
 

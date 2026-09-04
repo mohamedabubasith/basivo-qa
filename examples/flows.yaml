@@ -5,6 +5,12 @@
 
 base_url: http://localhost:5173
 
+# Files whose edits should trigger a re-run. Repo-relative globs. A flow can
+# carry its own `watch:` list; then only edits matching it re-run that flow.
+# Without any watch list nothing runs automatically; /qa is still manual.
+watch:
+  - apps/web/src/**
+
 # Credentials come from the environment, never from this file.
 # The agent reads QA_USER and QA_PASSWORD when a step says "log in".
 auth:
@@ -21,6 +27,9 @@ flows:
       - expect a message that says to check email, or a redirect into the app
 
   - id: login
+    watch:
+      - apps/web/src/routes/auth/**
+      - apps/web/src/lib/auth*
     steps:
       - open /login
       - log in

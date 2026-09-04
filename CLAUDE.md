@@ -19,6 +19,14 @@ to test, judge, triage and fix. Keep it that way until a real need appears.
 - Only localhost, or a URL the user gave in the session. Never a guessed
   production host.
 
+## Hooks
+
+`hooks/*.mjs` are the only code. Node, no dependencies. They read stdin JSON
+from Claude Code and print JSON or nothing. `flows.mjs` reads the fixed shape
+of flows.yaml on purpose instead of parsing YAML; if the file format grows,
+grow that reader with a test, do not add a YAML library. Flows run one at a
+time because all agents share one browser.
+
 ## Text a user reads
 
 Plain prose. No em-dashes, no arrows, no decorative tables. Commands, paths

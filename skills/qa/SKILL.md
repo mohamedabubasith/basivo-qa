@@ -27,17 +27,24 @@ fix what failed, rerun only that flow, stop when green.
 ## Run
 
 1. Confirm the server answers: navigate to the base URL. If it does not load,
-   every flow is `blocked` and the run stops with one line saying so.
+   every flow is `blocked` and the run stops with one line saying so. If the
+   browser itself fails to start with a message about a missing executable,
+   run `npx playwright install chromium` once, in Bash, and try again. That
+   is the only Bash this skill ever runs.
 2. Resolve `depends_on`. A flow whose dependency failed is `blocked`, not run.
-3. For each flow, spawn the `qa-check` agent with the flow's steps, the base
-   URL and the auth block. One agent per flow. Flows without dependencies can
-   run in parallel; keep it to three at once so the machine stays usable.
+3. For each flow, in order, spawn the `qa-check` agent with the flow's steps,
+   the base URL and the auth block. One agent per flow, one flow at a time.
+   Never run two in parallel: every agent drives the same browser through
+   the same Playwright MCP process, and two agents clicking in one browser
+   fail each other in ways that look like real bugs.
 4. Collect one verdict per flow. Validate the shape against
    `${CLAUDE_PLUGIN_ROOT}/schema/verdict.schema.json` in your head: the
    required keys are `flow`, `status`, `base_url`, `steps_run`. If an agent
    returns prose instead of JSON, ask it once for the JSON only.
-5. Write all verdicts to `.qa/run/verdicts.json` so the next run and the
-   user's tooling can read them.
+5. Write all verdicts to `.qa/run/verdicts.json` as a JSON array, overwriting
+   the previous run. The plugin's Stop hook reads that file's timestamp to
+   know the pending flows have been re-run, so write it even when every flow
+   passed, and write it before you summarise.
 
 ## After the run
 
@@ -52,6 +59,16 @@ edit, rerun only the flows that failed, not the whole file.
 Stop when every flow that was run is `pass`, or the user says stop, or the
 same flow has failed three times in a row with different fixes. In the last
 case say so plainly and hand over.
+
+## Runs you did not start
+
+The plugin installs two hooks. After an edit to a file matched by a `watch`
+list in flows.yaml, the affected flow ids are recorded under
+`.qa/run/pending.json`. When you try to finish the turn with pending flows,
+the Stop hook asks you to run them first. Run exactly those flows, write the
+verdicts file, report in one line per flow, then finish. If the app is not
+running, say so in one line and finish; do not start servers to satisfy the
+hook. Both hooks are inert in a project with no `.qa/flows.yaml`.
 
 ## Rules
 
