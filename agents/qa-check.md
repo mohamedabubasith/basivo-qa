@@ -1,7 +1,7 @@
 ---
 name: qa-check
 description: Exercise one flow from .qa/flows.yaml in a real browser and return a single JSON verdict. Spawned by the qa skill, one agent per flow. Use directly when the user asks to check exactly one flow.
-tools: mcp__plugin_basivo-qa_playwright__browser_navigate, mcp__plugin_basivo-qa_playwright__browser_snapshot, mcp__plugin_basivo-qa_playwright__browser_click, mcp__plugin_basivo-qa_playwright__browser_type, mcp__plugin_basivo-qa_playwright__browser_fill_form, mcp__plugin_basivo-qa_playwright__browser_press_key, mcp__plugin_basivo-qa_playwright__browser_select_option, mcp__plugin_basivo-qa_playwright__browser_hover, mcp__plugin_basivo-qa_playwright__browser_wait_for, mcp__plugin_basivo-qa_playwright__browser_take_screenshot, mcp__plugin_basivo-qa_playwright__browser_console_messages, mcp__plugin_basivo-qa_playwright__browser_network_requests, mcp__plugin_basivo-qa_playwright__browser_handle_dialog, mcp__plugin_basivo-qa_playwright__browser_navigate_back, mcp__plugin_basivo-qa_playwright__browser_tabs, mcp__plugin_basivo-qa_playwright__browser_close, Read
+tools: mcp__plugin_basivo-qa_playwright__browser_navigate, mcp__plugin_basivo-qa_playwright__browser_snapshot, mcp__plugin_basivo-qa_playwright__browser_click, mcp__plugin_basivo-qa_playwright__browser_type, mcp__plugin_basivo-qa_playwright__browser_fill_form, mcp__plugin_basivo-qa_playwright__browser_press_key, mcp__plugin_basivo-qa_playwright__browser_select_option, mcp__plugin_basivo-qa_playwright__browser_hover, mcp__plugin_basivo-qa_playwright__browser_wait_for, mcp__plugin_basivo-qa_playwright__browser_find, mcp__plugin_basivo-qa_playwright__browser_verify_element_visible, mcp__plugin_basivo-qa_playwright__browser_verify_text_visible, mcp__plugin_basivo-qa_playwright__browser_verify_list_visible, mcp__plugin_basivo-qa_playwright__browser_verify_value, mcp__plugin_basivo-qa_playwright__browser_take_screenshot, mcp__plugin_basivo-qa_playwright__browser_console_messages, mcp__plugin_basivo-qa_playwright__browser_network_requests, mcp__plugin_basivo-qa_playwright__browser_handle_dialog, mcp__plugin_basivo-qa_playwright__browser_navigate_back, mcp__plugin_basivo-qa_playwright__browser_tabs, mcp__plugin_basivo-qa_playwright__browser_close, Read
 model: sonnet
 ---
 
@@ -23,8 +23,9 @@ the flow this one depends on, so you can start from the state it left.
   login form. Never include a credential value in your output.
 - After each action, wait for the page to settle before judging: network idle
   or a visible change, at most 5 seconds.
-- A step that starts with "expect" is an assertion. Judge it against the
-  snapshot and the URL. Anything else is an action.
+- A step that starts with "expect" is an assertion. Prefer the
+  `browser_verify_*` tools for text, elements and values, and the URL from
+  the snapshot for redirects. Anything else is an action.
 - Keep a count of steps completed.
 
 ## When a step fails

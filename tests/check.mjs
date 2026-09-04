@@ -9,8 +9,8 @@ const read = (p) => readFileSync(join(root, p), "utf8");
 const fail = (msg) => { console.error("FAIL " + msg); process.exitCode = 1; };
 
 const plugin = JSON.parse(read(".claude-plugin/plugin.json"));
-for (const key of ["skills", "agents", "commands"]) {
-  if (!existsSync(join(root, plugin[key]))) fail(`${key} dir missing: ${plugin[key]}`);
+for (const key of ["skills", "agents", "commands"]) {  // default dirs, auto-discovered
+  if (!existsSync(join(root, key))) fail(`${key} dir missing`);
 }
 if (!plugin.mcpServers?.playwright?.args?.some((a) => a.startsWith("@playwright/mcp@")))
   fail("playwright mcp server must be pinned");
