@@ -13,9 +13,11 @@ process.stdin.on("end", () => {
   if (!readFlows(root)) return;
   const pending = readPending(root);
   if (!pending.flows.length) return;
-  if (settled(root, pending)) { writePending(root, { flows: [], since: 0 }); return; }
+  // Settled by a fresh verdicts file, or too old to be about this work.
+  const stale = Date.now() - pending.since > 24 * 60 * 60 * 1000;
+  if (settled(root, pending) || stale) { writePending(root, { flows: [], since: 0 }); return; }
   process.stdout.write(JSON.stringify({
     decision: "block",
-    reason: `Files you edited affect these qa flows: ${pending.flows.join(", ")}. Run the qa skill for exactly those flows now (base URL from .qa/flows.yaml; if the app is not running, say so in one line and stop instead). Report the verdicts, then finish.`,
+    reason: `Files you edited affect these qa flows: ${pending.flows.join(", ")}. Run the qa skill for exactly those flows now, base URL from .qa/flows.yaml. When done, write every verdict as a JSON array to .qa/run/verdicts.json with the Write tool; that file is what clears this reminder. Then report one line per flow and finish. If the app is not running, say so in one line and finish without writing anything.`,
   }));
 });

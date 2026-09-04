@@ -93,6 +93,9 @@ const later = new Date(Date.now() + 5000); utimesSync(join(proj, ".qa/run/verdic
 if (hook("before-stop.mjs", { cwd: proj }) !== "") fail("stop should pass once verdicts are fresh");
 if (JSON.parse(readFileSync(join(proj, ".qa/run/pending.json"), "utf8")).flows.length) fail("pending should be cleared");
 if (hook("before-stop.mjs", { cwd: mkdtempSync(join(tmpdir(), "noqa-")) }) !== "") fail("no flows.yaml means inert");
+// A pending list from yesterday must not block today's work.
+writeFileSync(join(proj, ".qa/run/pending.json"), JSON.stringify({ flows: ["login"], since: Date.now() - 25 * 3600 * 1000 }));
+if (hook("before-stop.mjs", { cwd: proj }) !== "") fail("stale pending should not block");
 
 for (const f of ["README.md", "CLAUDE.md", "skills/qa/SKILL.md", ...readdirSync(join(root, "agents")).map((a) => "agents/" + a), ...readdirSync(join(root, "commands")).map((c) => "commands/" + c), ...readdirSync(join(root, "hooks")).map((h) => "hooks/" + h)]) {
   if (read(f).includes("—")) fail(`${f}: em-dash in user-facing text`);
