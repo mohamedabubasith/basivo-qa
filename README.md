@@ -36,7 +36,7 @@ not break the flow.
 ## Install
 
 ```
-claude plugin marketplace add basivo/basivo-qa
+claude plugin marketplace add mohamedabubasith/basivo-qa
 claude plugin install basivo-qa@basivo
 ```
 
