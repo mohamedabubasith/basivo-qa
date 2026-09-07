@@ -12,6 +12,20 @@ const plugin = JSON.parse(read(".claude-plugin/plugin.json"));
 for (const key of ["skills", "agents", "commands"]) {  // default dirs, auto-discovered
   if (!existsSync(join(root, key))) fail(`${key} dir missing`);
 }
+// The marketplace entry and the plugin manifest are two files nobody
+// remembers to bump together. When they disagree, `claude plugin update`
+// installs a version the manifest does not claim to be, and the mismatch
+// shows up as a plugin that will not load rather than as a version error.
+const marketplace = JSON.parse(read(".claude-plugin/marketplace.json"));
+const listed = marketplace.plugins.find((entry) => entry.name === plugin.name);
+if (!listed) fail("the marketplace does not list this plugin");
+if (listed && listed.version !== plugin.version) {
+  fail(`marketplace says ${listed.version}, plugin.json says ${plugin.version}`);
+}
+if (marketplace.metadata?.version !== plugin.version) {
+  fail(`marketplace metadata says ${marketplace.metadata?.version}, plugin.json says ${plugin.version}`);
+}
+
 if (!/VERSION = "0\.0\.\d+"/.test(read("bin/playwright-mcp.mjs"))) fail("playwright mcp version must be pinned in the launcher");
 if (!read("bin/playwright-mcp.mjs").includes("--secrets")) fail("launcher must wire the secrets file");
 if (!read("agents/qa-check.md").includes("QA_USER")) fail("qa-check must explain typing secret names");

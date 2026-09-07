@@ -1,0 +1,91 @@
+# This plugin runs inside other people's Claude Code sessions, spawns a
+# browser, and reads a secrets file. That is a lot of trust for a repository
+# of markdown and four scripts, so the scanning here is about what could be
+# smuggled in rather than about dependency counts: the plugin has no
+# dependencies of its own.
+name: Security
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: "23 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  codeql:
+    name: CodeQL
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: github/codeql-action/init@v3
+        with:
+          language: javascript-typescript
+          queries: security-extended
+      - uses: github/codeql-action/analyze@v3
+        with:
+          category: /language:javascript-typescript
+
+  secrets:
+    name: no secrets in the history
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  handling:
+    name: the secrets file is never read or printed
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # The whole design is that Claude types a secret NAME and the browser
+      # server substitutes the value, so nothing in this repository should
+      # ever open .qa/secrets.env or echo an environment value. A commit that
+      # starts doing so is the one that turns a QA tool into an exfiltration
+      # path, and it would look perfectly ordinary in review.
+      - name: no script reads the secrets file
+        run: |
+          if grep -rnE "readFileSync\([^)]*secrets\.env|cat .*secrets\.env" bin hooks tests; then
+            echo "::error::a script reads the secrets file directly"
+            exit 1
+          fi
+          echo "nothing reads it"
+
+      - name: the secrets file stays out of git
+        run: |
+          grep -q "secrets.env" .gitignore || {
+            echo "::error::.gitignore must exclude .qa/secrets.env"
+            exit 1
+          }
+          if git ls-files | grep -E "secrets\.env$"; then
+            echo "::error::a secrets file is tracked"
+            exit 1
+          fi
+          echo "ignored and untracked"
+
+      - name: hooks send output, never files
+        run: |
+          # The hooks answer Claude Code on stdout. Anything that opens a
+          # socket or spawns a shell from a hook is out of scope for what a
+          # hook is allowed to do here.
+          if grep -rnE "net\.|https?\.request|child_process.*exec[^F]" hooks; then
+            echo "::error::a hook reaches the network or a shell"
+            exit 1
+          fi
+          echo "hooks stay local"

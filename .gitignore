@@ -1,3 +1,5 @@
 .qa/run/
 node_modules/
 .DS_Store
+# Credentials for the app under test. Named in flows.yaml, never committed.
+.qa/secrets.env

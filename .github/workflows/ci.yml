@@ -1,0 +1,81 @@
+# A plugin has no build and no test runner, so what CI protects here is
+# narrower and stricter: the manifest, the frontmatter Claude Code reads, and
+# the hooks. A plugin that fails to load does so silently on someone else's
+# machine, which is why every one of these is checked here instead.
+name: CI
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    name: plugin checks (node ${{ matrix.node }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # The oldest Claude Code supports and the current release. The hooks
+        # run inside whatever node the user has, not one we choose.
+        node: ["20", "22"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+
+      # Manifest, agent and command frontmatter, the verdict schema, the flows
+      # reader, both hooks end to end, and the em-dash rule.
+      - name: checks
+        run: node tests/check.mjs
+
+      - name: every script parses
+        run: |
+          status=0
+          while IFS= read -r file; do
+            node --check "$file" || status=1
+          done < <(find bin hooks tests -name "*.mjs")
+          exit $status
+
+      - name: every manifest is valid JSON
+        run: |
+          status=0
+          while IFS= read -r file; do
+            node -e "JSON.parse(require('fs').readFileSync('$file','utf8'))" \
+              || { echo "::error file=$file::not valid JSON"; status=1; }
+          done < <(find . -name "*.json" -not -path "./.git/*" -not -path "./node_modules/*")
+          exit $status
+
+  pinned-server:
+    name: the pinned browser server exists
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      # The launcher pins one version of the Playwright MCP server. If that
+      # version is ever unpublished or mistyped, every user finds out on their
+      # first /qa run, in a subprocess whose error they never see. One registry
+      # lookup here is the whole check; the server itself is not started,
+      # because it speaks stdio and would simply wait forever.
+      - name: the pinned version is published
+        run: |
+          version=$(sed -n 's/^const VERSION = "\(.*\)";$/\1/p' bin/playwright-mcp.mjs)
+          if [ -z "$version" ]; then
+            echo "::error::no pinned version found in bin/playwright-mcp.mjs"
+            exit 1
+          fi
+          echo "pinned at $version"
+          npm view "@playwright/mcp@$version" version
