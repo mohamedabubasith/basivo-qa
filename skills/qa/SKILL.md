@@ -75,6 +75,20 @@ verdicts file, report in one line per flow, then finish. If the app is not
 running, say so in one line and finish; do not start servers to satisfy the
 hook. Both hooks are inert in a project with no `.qa/flows.yaml`.
 
+## What a run should cost
+
+The expensive part of browser testing is not the browser, it is the page
+descriptions each agent reads. Keep them out of your own context:
+
+- Never snapshot the page yourself. Step 1 is a navigate to prove the server
+  answers, and after that every page is the checking agent's business.
+- A verdict is the whole report. Do not ask an agent for the page it saw, and
+  do not paste a verdict into your summary, one line per flow is the summary.
+- Run only the flows that are in question. After a fix, rerun the failures,
+  not the file. The Stop hook names exactly which ones are pending.
+- `qa-triage` reads source and returns file paths. Give it the verdict, not
+  the repository.
+
 ## Rules
 
 - Never run flows against a URL that is not localhost or explicitly given by

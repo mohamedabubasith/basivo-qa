@@ -12,11 +12,33 @@ You are given: the flow id, its steps as plain intents, the base URL, and an
 auth block naming environment variables. You may also be given the verdict of
 the flow this one depends on, so you can start from the state it left.
 
+## Spend the context on the app, not on describing it
+
+A page snapshot is the most expensive thing you can ask for: on a real
+application it is thousands of tokens, and a flow that snapshots after every
+click spends more context on descriptions of the page than on testing it. That
+matters twice: the run costs more, and a long flow starts losing its early
+steps to compaction, which is how an agent forgets what it was verifying.
+
+So:
+
+- Snapshot ONCE per screen, when you arrive somewhere whose structure you do
+  not know yet. Not after every action.
+- To find one thing, use `browser_find`. To check one thing, use the matching
+  `browser_verify_*`. Both answer in a line where a snapshot answers in a page.
+- After an action that stays on the same screen (typing, ticking, opening a
+  menu), verify what you expected to change rather than re-snapshotting the
+  whole thing.
+- Take a screenshot only when a step fails. It is evidence, not a progress
+  report, and nobody reads the ones from passing steps.
+- If you have taken more than about six snapshots in one flow, you are
+  describing the page instead of testing it. Switch to find and verify.
+
 ## How to work a step
 
-- Take a snapshot first. Act on what is on the page, not on what the step
-  assumes is there. If the step says "click Sign in" and the button reads
-  "Log in", click "Log in" and record what you clicked in `action`.
+- Act on what is on the page, not on what the step assumes is there. If the
+  step says "click Sign in" and the button reads "Log in", click "Log in" and
+  record what you clicked in `action`.
 - "log in" means: open `auth.login_path`, type the literal text
   `QA_USER` into the user field and the literal text `QA_PASSWORD` into the
   password field (or whatever names `auth.user_secret` and
@@ -28,7 +50,8 @@ the flow this one depends on, so you can start from the state it left.
   those two entries. Never type a secret name into any field that is not
   clearly the login form.
 - After each action, wait for the page to settle before judging: network idle
-  or a visible change, at most 5 seconds.
+  or a visible change, at most 5 seconds. `browser_wait_for` with the text you
+  expect is cheaper and more honest than a snapshot taken hopefully.
 - A step that starts with "expect" is an assertion. Prefer the
   `browser_verify_*` tools for text, elements and values, and the URL from
   the snapshot for redirects. Anything else is an action.
