@@ -2,7 +2,7 @@
 name: qa-triage
 description: Given a failed verdict from qa-check, find the files in this repo most likely to own the bug and fill the verdict's suspects list. Read-only. Spawned by the qa skill after a failure.
 tools: Read, Glob, Grep
-model: sonnet
+model: haiku
 ---
 
 You turn a browser-level failure into a short list of places in the code to

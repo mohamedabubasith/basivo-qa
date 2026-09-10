@@ -71,6 +71,21 @@ The shape is deliberately small: the failing step, what was expected, what
 happened, the failed requests, console errors, a screenshot path, and the
 files most likely to own the bug.
 
+## What it costs
+
+Browser testing with an agent is cheap or ruinous depending on one habit: how
+often it asks for a description of the page. A snapshot of a real application
+is two to four thousand tokens, so a flow that takes one per step spends more
+context describing the screen than testing it.
+
+So the checker snapshots once per unfamiliar screen and uses find, verify and
+wait after that; flows run in batches of up to five in one browser, which pays
+the prompt, the tool schemas and the sign-in once per batch rather than once
+per flow; and triage greps rather than reads.
+
+`node bin/qa-cost.mjs` prints what the last run actually spent, from the files
+in `.qa/run`. More than about six snapshots a flow means the habit has slipped.
+
 ## What it does not do
 
 Cross-browser matrices, device farms, scheduled cloud runs, dashboards,
@@ -82,9 +97,10 @@ just changed the code.
 ```
 .claude-plugin/plugin.json   manifest, bundles the Playwright MCP server
 skills/qa/SKILL.md           the loop: run, verdict, triage, fix, rerun
-agents/qa-check.md           one flow in the browser, one JSON verdict
+agents/qa-check.md           a batch of flows in one browser, a verdict each
 agents/qa-explore.md         writes .qa/flows.yaml from the running app
 agents/qa-triage.md          names the files behind a failure
+bin/qa-cost.mjs              what the last run cost, in tokens of page text
 commands/qa.md               /qa
 commands/qa-explore.md       /qa-explore
 schema/verdict.schema.json   the contract every verdict follows

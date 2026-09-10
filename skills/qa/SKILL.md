@@ -37,12 +37,24 @@ fix what failed, rerun only that flow, stop when green.
    run `npx playwright install chromium` once, in Bash, and try again. That
    is the only Bash this skill ever runs.
 2. Resolve `depends_on`. A flow whose dependency failed is `blocked`, not run.
-3. For each flow, in order, spawn the `qa-check` agent with the flow's steps,
-   the base URL and the auth block. One agent per flow, one flow at a time.
-   Never run two in parallel: every agent drives the same browser through
-   the same Playwright MCP process, and two agents clicking in one browser
-   fail each other in ways that look like real bugs.
-4. Collect one verdict per flow. Validate the shape against
+3. Run the flows in BATCHES, not one agent each. Take them in order, in
+   groups of up to five that share a `depends_on` (or have none), and spawn
+   one `qa-check` agent per group with every flow's steps, the base URL and
+   the auth block. The agent returns one verdict per flow in a JSON array,
+   and carries on to the next flow after a failure.
+
+   Batching is the difference between a run you use and one you avoid: the
+   system prompt, the tool schemas and the sign-in are paid once per group
+   rather than once per flow, and the browser is already where the last flow
+   left it. Five is the ceiling because an agent's context grows with every
+   screen it looks at, and a long enough batch starts forgetting its early
+   steps.
+
+   Never run two agents at once: they drive the same browser through the same
+   Playwright MCP process, and two agents clicking in one window fail each
+   other in ways that look like real bugs.
+4. Collect one verdict per flow, from the arrays each agent returned.
+   Validate the shape against
    `${CLAUDE_PLUGIN_ROOT}/schema/verdict.schema.json` in your head: the
    required keys are `flow`, `status`, `base_url`, `steps_run`. If an agent
    returns prose instead of JSON, ask it once for the JSON only.
@@ -86,6 +98,8 @@ descriptions each agent reads. Keep them out of your own context:
   do not paste a verdict into your summary, one line per flow is the summary.
 - Run only the flows that are in question. After a fix, rerun the failures,
   not the file. The Stop hook names exactly which ones are pending.
+- One sign-in per run. The browser keeps its session between flows, so a flow
+  that depends on `login` starts by navigating, not by signing in again.
 - `qa-triage` reads source and returns file paths. Give it the verdict, not
   the repository.
 

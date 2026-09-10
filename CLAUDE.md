@@ -19,13 +19,17 @@ to test, judge, triage and fix. Keep it that way until a real need appears.
 - Only localhost, or a URL the user gave in the session. Never a guessed
   production host.
 
-## Hooks
+## Code
 
-`hooks/*.mjs` are the only code. Node, no dependencies. They read stdin JSON
-from Claude Code and print JSON or nothing. `flows.mjs` reads the fixed shape
-of flows.yaml on purpose instead of parsing YAML; if the file format grows,
-grow that reader with a test, do not add a YAML library. Flows run one at a
-time because all agents share one browser.
+`hooks/*.mjs` and `bin/*.mjs` are the only code. Node, no dependencies. Hooks
+read stdin JSON from Claude Code and print JSON or nothing. `flows.mjs` reads
+the fixed shape of flows.yaml on purpose instead of parsing YAML; if the file
+format grows, grow that reader with a test, do not add a YAML library.
+
+One checker agent runs at a time because they all share one browser. A single
+agent carries a batch of flows through that browser, and that is where most of
+the token saving comes from: the system prompt, the tool schemas and the sign
+in are paid once per batch instead of once per flow.
 
 ## Text a user reads
 
