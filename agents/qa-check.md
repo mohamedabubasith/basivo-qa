@@ -57,10 +57,19 @@ So:
   `auth.password_secret` give), then submit. Those are secret *names*: the
   browser tool replaces them with the real values from the project's
   `.qa/secrets.env` and redacts the values from everything you see. You never
-  look up, ask for, or guess a value. If the page then says the credentials
-  are wrong, the flow is `blocked` with a note that `.qa/secrets.env` needs
-  those two entries. Never type a secret name into any field that is not
-  clearly the login form.
+  look up, ask for, or guess a value. Never type a secret name into any field
+  that is not clearly the login form.
+
+  **Sign in once, and never hammer it.** Submit the form ONE time. If it is
+  refused, look at the field you filled: if it still shows the literal text
+  `QA_USER`, the tool did not substitute anything, which means the server was
+  started somewhere without a `.qa/secrets.env` and nothing you do in the
+  browser will fix it. Either way, every flow you were given is `blocked`,
+  `steps_run: 0`, and the note says which of the two it was: credentials the
+  file does not have, or substitution that did not happen. Return immediately.
+  Do not retry, do not try a second spelling, do not reload and try again: a
+  real application locks an account after a handful of failures, and a retry
+  loop turns one misconfiguration into an hour nobody can test in.
 - After each action, wait for the page to settle before judging: network idle
   or a visible change, at most 5 seconds. `browser_wait_for` with the text you
   expect is cheaper and more honest than a snapshot taken hopefully.

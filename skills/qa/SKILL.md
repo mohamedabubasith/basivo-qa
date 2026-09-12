@@ -36,8 +36,20 @@ fix what failed, rerun only that flow, stop when green.
    browser itself fails to start with a message about a missing executable,
    run `npx playwright install chromium` once, in Bash, and try again. That
    is the only Bash this skill ever runs.
-2. Resolve `depends_on`. A flow whose dependency failed is `blocked`, not run.
-3. Run the flows in BATCHES, not one agent each. Take them in order, in
+2. If any flow needs signing in, prove that sign in works BEFORE spawning
+   the batches: spawn one `qa-check` agent with the single `login` flow (or
+   the cheapest flow that signs in). If it comes back anything but `pass`,
+   stop the run there. Every remaining flow is `blocked` with that agent's
+   note, and the summary says the one thing to fix.
+
+   This gate exists because the alternative is expensive in two ways that are
+   easy to miss: a broken credential is not one failed flow, it is every flow
+   behind the sign in, each paying for an agent, a browser and a page it will
+   never reach. And each of those agents adds failed sign ins to whatever the
+   application counts, so a run that was only going to report one problem can
+   lock the account it was testing with.
+3. Resolve `depends_on`. A flow whose dependency failed is `blocked`, not run.
+4. Run the flows in BATCHES, not one agent each. Take them in order, in
    groups of up to five that share a `depends_on` (or have none), and spawn
    one `qa-check` agent per group with every flow's steps, the base URL and
    the auth block. The agent returns one verdict per flow in a JSON array,
@@ -53,12 +65,12 @@ fix what failed, rerun only that flow, stop when green.
    Never run two agents at once: they drive the same browser through the same
    Playwright MCP process, and two agents clicking in one window fail each
    other in ways that look like real bugs.
-4. Collect one verdict per flow, from the arrays each agent returned.
+5. Collect one verdict per flow, from the arrays each agent returned.
    Validate the shape against
    `${CLAUDE_PLUGIN_ROOT}/schema/verdict.schema.json` in your head: the
    required keys are `flow`, `status`, `base_url`, `steps_run`. If an agent
    returns prose instead of JSON, ask it once for the JSON only.
-5. Write all verdicts to `.qa/run/verdicts.json` as a JSON array, overwriting
+6. Write all verdicts to `.qa/run/verdicts.json` as a JSON array, overwriting
    the previous run. The plugin's Stop hook reads that file's timestamp to
    know the pending flows have been re-run, so write it even when every flow
    passed, and write it before you summarise.
@@ -100,6 +112,9 @@ descriptions each agent reads. Keep them out of your own context:
   not the file. The Stop hook names exactly which ones are pending.
 - One sign-in per run. The browser keeps its session between flows, so a flow
   that depends on `login` starts by navigating, not by signing in again.
+- One sign-in ATTEMPT per agent. A refused sign in is reported, never retried:
+  the second attempt cannot succeed where the first failed, and applications
+  lock accounts that are hammered.
 - `qa-triage` reads source and returns file paths. Give it the verdict, not
   the repository.
 
